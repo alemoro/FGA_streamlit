@@ -10,7 +10,7 @@ import seaborn as sns
 sns.set_theme(style='ticks', rc={'axes.spines.right':False, 'axes.spines.top':False})
 from PIL import Image
 
-icon = Image.open("G:/My Drive/Streamlit_FGA/img/Neurospector.png")
+icon = Image.open("./img/Neurospector.png")
 
 st.set_page_config(
     page_title="FGA ELISA analysis",
@@ -124,7 +124,7 @@ def calculate_standards():
 
 # Add a quick start on the sidebar
 with st.sidebar:
-    logo = Image.open("G:/My Drive/Streamlit_FGA/img/FGA_Neurospector.png")
+    logo = Image.open("./img/FGA_Neurospector.png")
     st.image(logo)
     with st.expander("Quick start"):
         st.markdown('''
