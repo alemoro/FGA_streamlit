@@ -1,14 +1,14 @@
 import streamlit as st
 from PIL import Image
 
-icon = Image.open("G:/My Drive/Streamlit_FGA/img/Neurospector.png")
+icon = Image.open("./img/Neurospector.png")
 st.set_page_config(
     page_title="FGA data processing and analysis",
     page_icon=icon,
 )
 
 with st.sidebar:
-    logo = Image.open("G:/My Drive/Streamlit_FGA/img/FGA_Neurospector.png")
+    logo = Image.open("./img/FGA_Neurospector.png")
     st.image(logo)
 
 st.write("# Welcome to the FGA data processing and analysis page!")
