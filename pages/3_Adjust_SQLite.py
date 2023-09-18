@@ -1,14 +1,4 @@
 import streamlit as st
-import io
-import numpy as np
-import pandas as pd
-from tkinter import Tk
-from tkinter.filedialog import askopenfilename
-import sqlite3
-import matplotlib.pyplot as plt
-plt.rcParams['pdf.fonttype'] = 'truetype'
-import seaborn as sns
-sns.set_theme(style='ticks', rc={'axes.spines.right':False, 'axes.spines.top':False})
 from PIL import Image
 
 icon = Image.open("./img/Neurospector.png")
