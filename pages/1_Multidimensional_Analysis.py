@@ -13,11 +13,11 @@ from statsmodels.stats.multitest import multipletests
 from PIL import Image
 
 # preprocessing
-from sklearn import metrics, preprocessing
+from sklearn import preprocessing
 from sklearn.preprocessing import LabelEncoder, scale
 
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
-import umap
+#import umap
 
 # training
 from sklearn.utils import resample
@@ -26,6 +26,15 @@ from sklearn.model_selection import train_test_split
 # metrics
 from sklearn.metrics import confusion_matrix, accuracy_score
 
+
+def process_LDA_data(temp_df, varIdx, columnIdx):
+    lda_data = temp_df.iloc[:,varIdx]
+    lda_labels = temp_df.loc[:,genotype_col]
+    # Returns a scaled version of your sliced data 
+    scaler = preprocessing.StandardScaler()
+    lda_data = scaler.fit_transform(lda_data)
+    lda_data = np.nan_to_num(lda_data, nan=0.0001)
+    return lda_data, lda_labels
 
 def plot_LDA_biplot(lda, lda_labels, lda_coef, colors, feat_names, ax=None):
     sum_components = np.sum(abs(lda_coef), axis=1)
@@ -90,7 +99,13 @@ def calculate_fold_change(temp_df, genotype_col, control_group, var_idx):
 def convert_df(temp_df):
     return temp_df.to_csv().encode('utf-8')
 
+icon = Image.open("G:/My Drive/Streamlit_FGA/img/Neurospector.png")
 
+st.set_page_config(
+    page_title="FGA ELISA analysis",
+    page_icon=icon,
+    layout='wide',
+)
 
 # Initialize the session
 if "new_session" not in st.session_state:
@@ -106,10 +121,10 @@ if "new_session" not in st.session_state:
 varIdx = [8, 93]
 
 # Create the basic layout of the page
-st.title('FGA multidimensional data analysis')
+st.title('Multidimensional data analysis', )
 with st.sidebar:
-    #logo = Image.open("./images/FGA_Neurospector.png")
-    #st.image(logo)
+    logo = Image.open("G:/My Drive/Streamlit_FGA/img/FGA_Neurospector.png")
+    st.image(logo)
     with st.expander("Quick start"):
         st.write('''
             This web app will giude you through the analysis of multidimensional data analysis such as for **calcium imaging** data.  
@@ -133,7 +148,7 @@ if add_input is not None:
     st.session_state.img_df = pd.read_csv(add_input)
 
 # Inspect the raw data
-st.subheader('Raw data')
+st.header('Raw data input', divider=True)
 with st.expander("Data input"):
     st.write('''
         Here you can visualize your input data.  
@@ -144,7 +159,8 @@ with st.expander("Data input"):
 
 if len(st.session_state.img_df) > 0:
     img_df = st.session_state.img_df
-    st.write(img_df)
+    if st.toggle("Show raw data", key="Multidimension_RawToggle"):
+        st.write(img_df)
     # Get the variables names and ask the user to pick the important ones
     var_names = [var for var in img_df.keys()]
 else:
@@ -193,32 +209,29 @@ if len(st.session_state.img_df) > 0:
     st.button("Calculate the fold change", key="fold_change", on_click=calculate_fold_change, args=(use_df, genotype_col, control_group, varIdx), help="You need to select some features from the dropdown menu in the side bar before calculate the fold chage!")
 
 # Show and explain how the fold change is calculated
-st.subheader('Fold change')
+st.header('Fold change', divider=True)
 with st.expander("Fold change explanation"):
     st.markdown("""
                 Now that the app knows which features are important, and which grouping factor you want, it will calculate the fold change and the corrected p-value.  
                 **Fold change** is a measure describing how much a quantity changes between an original and a subsequent measurement.
                 It is defined as the ratio between the two quantities; for quantities A and B the fold change of B with respect to A is: ${\dfrac{B}{A}}$.  
                 In other words, a change from 30 to 60 is defined as a fold-change of 2. This is also referred to as a "one fold increase". Similarly, a change from 30 to 15 is referred to as a "0.5-fold decrease".  
-                """)
-    st.markdown("""
+                  
                 In this app the fold change is calculated with the following steps:
                 - Filter the data accordingly to the two user filters
                 - Calculate the mean values of the user specified features for the *control* group
                 - Calculate the mean values of the user specified features for the other groups.  
-                """)
-    st.markdown("""
+                  
                 The **p-value** is automatically calculated per combination of feature and group, using the *scipy* library.  
                 The values are the corrected for multiple testing using the **fdr_bh** correction from the *statsmodels* library.  
                 In the *Benjamini-Hochberg* correction, the level $a$ is calculated so that by plottingh the p-value of the test *k* over *k* and plotting a line with slope ${\dfrac{a}{m}}$, the true discovery are the ones above the line.
                 """)
 
 if len(st.session_state.groupped_data) > 0:
-    st.write(st.session_state.groupped_data)
-    download_df = convert_df(st.session_state.groupped_data)
-    st.download_button(label="Download data", data=download_df, file_name="NetworkAnalysis_FoldChange.csv", mime="text/csv")
-
-
+    if st.toggle("Show fold change table", key="Multidimension_Foldchange_Data_Toggle"):
+        st.session_state.groupped_data
+        download_df = convert_df(st.session_state.groupped_data)
+        st.download_button(label="Download data", data=download_df, file_name="NetworkAnalysis_FoldChange.csv", mime="text/csv")
 
 # Plot the data indicating the significant threshold as a dotted line
 st.subheader('Volcano plot :volcano:')
@@ -234,18 +247,17 @@ with st.expander("Volcano plot explanation"):
                 """)
     
 if len(st.session_state.groupped_data) > 0:
-    tab1, tab2 = st.tabs(["Seaborn plot (default)", "Vega-lite plot (experimental)"])
-    volcano_data = st.session_state.groupped_data.copy()
-    volcano_data = volcano_data[volcano_data["Group"]!=control_group]
-    with tab1:
+    if st.toggle("Show volcano plot", key="Multidimension_Volcano_Toggle"):
+        volcano_data = st.session_state.groupped_data.copy()
+        volcano_data = volcano_data[volcano_data["Group"]!=control_group]
         unique_groups = st.session_state.groupped_data["Group"].unique()
         if  len(unique_groups) == 3:
             cmap=['#252525', '#026842', '#5E9BD1']
         else:
             cmap=['#252525', '#006d2c', '#08519c', '#a50f15', '#54278f',
-                  '#636363', '#31a354', '#3182bd', '#de2d26', '#756bb1',
-                  '#969696', '#74c476', '#6baed6', '#fb6a4a', '#9e9ac8',
-                  '#bdbdbd', '#a1d99b', '#9ecae1', '#fc9272', '#bcbddc']
+                    '#636363', '#31a354', '#3182bd', '#de2d26', '#756bb1',
+                    '#969696', '#74c476', '#6baed6', '#fb6a4a', '#9e9ac8',
+                    '#bdbdbd', '#a1d99b', '#9ecae1', '#fc9272', '#bcbddc']
             cmap = cmap[:len(unique_groups)]
         xlim = [-2, 2]
         ylim = [0, 9]
@@ -267,19 +279,8 @@ if len(st.session_state.groupped_data) > 0:
         col3.write("##"); col3.button("Relead")
         col4.write("##"); col4.download_button(label="Download volcano", data=img_volcano, file_name="volcanoPlot.pdf", mime="application/pdf")
 
-    with tab2:
-        # Plot using vega
-        chart = {"mark": "point",
-                "encoding": {
-                    "x": {"field": "Fold Change", "type": "quantitative", },
-                    "y": {"field": "p-value", "type": "quantitative", },
-                    "color": {"field": "Group", "type": "nominal"},
-                    },
-                }
-        st.vega_lite_chart(volcano_data, chart, theme="streamlit", use_container_width=True)
 
-
-st.subheader('LDA analysis')
+st.header('LDA analysis', divider=True)
 with st.expander("LDA explanation"):
     st.write("""
             The linear discriminant analysis (**LDA**) is a generalization of *Fisher's linear discriminant*, a method used to find a linear combination of features that characterized, or separate, two or more classes of objects.  
@@ -294,79 +295,108 @@ with st.expander("LDA explanation"):
              - The factors are scaled and sorted on the data  
              The factor can then be plotted on top of the scatter plot of the LDA (default) as a **biplot**, or listed underneath the plot.
              """)
-if len(st.session_state.groupped_data) > 0:
-    # Perform an LDA
-    lda_data = use_df.iloc[:,varIdx]
-    lda_labels = use_df.loc[:,genotype_col]
-    # Returns a scaled version of your sliced data 
-    scaler = preprocessing.StandardScaler()
-    lda_data = scaler.fit_transform(lda_data)
-    lda_data = np.nan_to_num(lda_data, nan=0.0001)
-    # Input the column you want to use as the labels for PCA: make sure to take data.values. 
-    # set lda model and fit to the data
-    linear_discriminant = LDA(solver="svd", store_covariance=True)
-    lda = linear_discriminant.fit_transform(lda_data, lda_labels)
-    lda_predict = linear_discriminant.fit(lda_data, lda_labels).predict(lda_data)
-    # Get the coefficients (scaling factors)
-    lda_coef = linear_discriminant.scalings_
-    feat_names = use_df.iloc[:,varIdx].columns.tolist()
-    sum_components = np.sum(abs(lda_coef), axis=1)
-    sort_index = np.argsort(sum_components)
-    scalex = 1.0 / (lda[:, 0].max() - lda[:, 0].min())
-    scaley = 1.0 / (lda[:, 1].max() - lda[:, 1].min())
-    fig_lda = plt.figure()
-    if st.session_state.biplot:
-        sns.scatterplot(x=lda[:, 0] * scalex, y=lda[:, 1] * scaley, hue=lda_labels, palette=cmap)
-        for s in sort_index[0:5]:
-            plt.arrow(0, 0, lda_coef[s, 0], lda_coef[s, 1], color='r')
-            plt.text(lda_coef[s, 0], lda_coef[s, 1], feat_names[s], ha='center', va='center')
-        plt.xlim([-1, 1])
-        plt.ylim([-1, 1])
-    else:
-        #fig, ax = plt.subplots()
-        ax = sns.scatterplot(x=lda[:, 0], y=lda[:, 1], hue=lda_labels, palette=cmap)
-        for p in range(np.shape(linear_discriminant.means_)[0]):
-            lda_means = linear_discriminant.means_[p]
-            lda_cov = linear_discriminant.covariance_
-            v, w = linalg.eigh(lda_cov)
-            u = w[0] / linalg.norm(w[0])
-            angle = np.arctan(u[1] / u[0])
-            angle = 180 * angle / np.pi
-            ell = mpl.patches.Ellipse(
-                lda_means,
-                2 * v[0] ** 0.5,
-                2 * v[1] ** 0.5,
-                angle=180 + angle,
-                facecolor=cmap[p],
-                edgecolor="black",
-                alpha=0.5,
-                linewidth=2,
-            )
-            st.write(ell)
-    plt.xlabel("LD1")
-    plt.ylabel("LD2")
-    st.pyplot(fig_lda, use_container_width=True)
-    img_lda = io.BytesIO()
-    plt.savefig(img_lda, format='pdf')
-    col1, col2, col3, col4, col5 = st.columns(5)
-    st.session_state.biplot = col1.checkbox("Biplot", value=st.session_state.biplot, key="lda_biplot")
-    col3.button("Reload")
-    lda_feature_list = col2.checkbox("Show list of features", value=st.session_state.lda_feature_list, key="lda_feature_list")
-    col4.download_button(label="Download LDA plot", data=img_lda, file_name="LDA_Plot.pdf", mime="application/pdf")
-    lda_df = pd.DataFrame(lda)
-    download_df = convert_df(lda_df)
-    col5.download_button(label="Download LDA", data=download_df, file_name="Networkanalysis_LDA.csv", mime="text/csv")
-    if lda_feature_list:
-        for s in sort_index:
-            feat_names[s]
-        #ordered_names = [feat_names[s] for s in sort_index]
-        #ordered_names
+if len(st.session_state.img_df) > 0:    
+    if st.toggle("Calculate LDA", key="Multidimension_LDA_Toggle"):
+        with st.form("LDA Options"):
+            unique_groups = use_df[genotype_col].unique()
+            conditions_order = st.multiselect("Select the plotting order", unique_groups, default=control_group)
+            col1, col2, col3 = st.columns(3)
+            st.session_state.biplot = col1.checkbox("Biplot", key="lda_biplot")
+            lda_feature_list = col2.checkbox("Show list of features", key="lda_feature_list")
+            do_bootstrap = col3.checkbox("Bootstrap analysis")
+            submitted = st.form_submit_button("Update")
+            if submitted:
+                    if  len(conditions_order) == 3:
+                        cmap=['#252525', '#026842', '#5E9BD1']
+                    else:
+                        cmap=['#252525', '#006d2c', '#08519c', '#a50f15', '#54278f',
+                              '#636363', '#31a354', '#3182bd', '#de2d26', '#756bb1',
+                              '#969696', '#74c476', '#6baed6', '#fb6a4a', '#9e9ac8',
+                              '#bdbdbd', '#a1d99b', '#9ecae1', '#fc9272', '#bcbddc']
+                        cmap = cmap[:len(conditions_order)]
+                    # Perform an LDA
+                    if len(unique_groups) > len(conditions_order):
+                        lda_df = use_df[use_df[genotype_col].isin(conditions_order)]
+                    else:
+                        lda_df = use_df
+                    lda_data, lda_labels = process_LDA_data(lda_df, varIdx, genotype_col)
+                    # set lda model and fit to the data
+                    linear_discriminant = LDA(solver="svd", store_covariance=True)
+                    lda = linear_discriminant.fit_transform(lda_data, lda_labels)
+                    if do_bootstrap:
+                        lda_confusion = np.zeros((len(conditions_order), len(conditions_order), 1000))
+                        for b in range(1000):
+                            data_train, data_test, label_train, label_test = train_test_split(lda_data, lda_labels, test_size=0.3)
+                            lda_predict = linear_discriminant.fit(data_train, label_train).predict(data_test)
+                            lda_confusion[:,:,b] = confusion_matrix(y_true=label_test, y_pred=lda_predict, labels=conditions_order)
+                        lda_confusion = np.mean(lda_confusion, axis=2)
+                    else:
+                        lda_predict = linear_discriminant.fit(lda_data, lda_labels).predict(lda_data)
+                        lda_confusion = confusion_matrix(y_true=lda_labels, y_pred=lda_predict, labels=conditions_order)
+                    # Get the coefficients (scaling factors)
+                    lda_coef = linear_discriminant.scalings_
+                    feat_names = lda_df.iloc[:,varIdx].columns.tolist()
+                    sum_components = np.sum(abs(lda_coef), axis=1)
+                    sort_index = np.argsort(sum_components)
+                    scalex = 1.0 / (lda[:, 0].max() - lda[:, 0].min())
+                    scaley = 1.0 / (lda[:, 1].max() - lda[:, 1].min())
+                    tab1, tab2, tab3 = st.tabs(['Scatter', 'Confusion', 'Predict'])
+                    with tab1:
+                        fig_lda = plt.figure()
+                        if st.session_state.biplot:
+                            sns.scatterplot(x=lda[:, 0] * scalex, y=lda[:, 1] * scaley, hue=lda_labels, palette=cmap)
+                            for s in sort_index[0:5]:
+                                plt.arrow(0, 0, lda_coef[s, 0], lda_coef[s, 1], color='r')
+                                plt.text(lda_coef[s, 0], lda_coef[s, 1], feat_names[s], ha='center', va='center')
+                            plt.xlim([-1, 1])
+                            plt.ylim([-1, 1])
+                        else:
+                            sns.scatterplot(x=lda[:, 0], y=lda[:, 1], hue=lda_labels, palette=cmap)
+                        plt.xlabel("LD1")
+                        plt.ylabel("LD2")
+                        st.pyplot(fig_lda, use_container_width=True)
+                    with tab2:
+                        fig_confusion = plt.figure()
+                        sns.heatmap(data = lda_confusion, cmap='mako', annot=True, xticklabels=conditions_order, yticklabels=conditions_order)
+                        plt.xlabel("Predicted")
+                        plt.ylabel("True")
+                        st.pyplot(fig_confusion)
+                    with tab3:
+                        predict_order = st.multiselect("Select the variables to predict", unique_groups)
+                        if len(predict_order) > 2:
+                            predict_df = use_df[use_df[genotype_col].isin(predict_order)]
+                            predict_data, predict_labels = process_LDA_data(predict_df, varIdx, genotype_col)
+                            predict_test = linear_discriminant.fit(lda_data, lda_labels).predict(predict_data)
+                            transform_test = linear_discriminant.fit(lda_data, lda_labels).transform(predict_data)
+                            predict_confusion = np.zeros((len(predict_order), len(conditions_order)))
+                            for p_i, predict in enumerate(predict_order):
+                                temp_fltr = predict_test[predict_labels==predict]
+                                for t_i, label in enumerate(conditions_order):
+                                    predict_confusion[p_i,t_i] = np.sum(temp_fltr == label)
+                            fig_confusion = plt.figure()
+                            sns.heatmap(data = predict_confusion, cmap='mako', annot=True, xticklabels=conditions_order, yticklabels=predict_order)
+                            plt.xlabel("Predicted")
+                            plt.ylabel("True")
+                            st.pyplot(fig_confusion)
+                    if lda_feature_list:
+                        for s in sort_index:
+                            feat_names[s]
 
-if len(st.session_state.groupped_data) > 0:
-    # Try to perform a UMAP analysis
-    reducer = umap.UMAP(n_neighbors=50, min_dist=1)
-    # Use the LDA data
-    embedding = reducer.fit_transform(lda_data)
-    fig_umap = plt.figure()
-    sns.scatterplot(x=embedding[:, 0], y=embedding[:, 1], hue=lda_labels, palette=cmap)
-    st.pyplot(fig_umap, use_container_width=True)
+                    img_lda = io.BytesIO()
+                    plt.savefig(img_lda, format='pdf')
+
+        if 'img_lda' in locals():
+            col1, col2 = st.columns(2)
+            col1.download_button(label="Download LDA plot", data=img_lda, file_name="LDA_Plot.pdf", mime="application/pdf")
+            download_df = convert_df(pd.DataFrame(lda))
+            col2.download_button(label="Download LDA", data=download_df, file_name="Networkanalysis_LDA.csv", mime="text/csv")
+                    
+
+#if len(st.session_state.groupped_data) > 0:
+#    # Try to perform a UMAP analysis
+#    reducer = umap.UMAP(n_neighbors=50, min_dist=1)
+#    # Use the LDA data
+#    embedding = reducer.fit_transform(lda_data)
+#    fig_umap = plt.figure()
+#    sns.scatterplot(x=embedding[:, 0], y=embedding[:, 1], hue=lda_labels, palette=cmap)
+#    st.pyplot(fig_umap, use_container_width=True)
