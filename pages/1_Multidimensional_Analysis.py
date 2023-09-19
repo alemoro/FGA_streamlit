@@ -99,7 +99,7 @@ def calculate_fold_change(temp_df, genotype_col, control_group, var_idx):
 def convert_df(temp_df):
     return temp_df.to_csv().encode('utf-8')
 
-icon = Image.open("G:/My Drive/Streamlit_FGA/img/Neurospector.png")
+icon = Image.open("./img/Neurospector.png")
 
 st.set_page_config(
     page_title="FGA ELISA analysis",
@@ -123,7 +123,7 @@ varIdx = [8, 93]
 # Create the basic layout of the page
 st.title('Multidimensional data analysis', )
 with st.sidebar:
-    logo = Image.open("G:/My Drive/Streamlit_FGA/img/FGA_Neurospector.png")
+    logo = Image.open("./img/FGA_Neurospector.png")
     st.image(logo)
     with st.expander("Quick start"):
         st.write('''
