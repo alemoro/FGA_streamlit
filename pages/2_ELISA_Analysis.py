@@ -177,7 +177,7 @@ if elisa_input is not None:
     # Before doing anything ask if the sample are diluted, and if the conditions are a combination of different columns
     col1, col2, col3 = st.columns([1,3,1])
     with col1:
-        st.number_input("ELISA dilution factor", min_value=1, max_value=10, step=0.5, value=2, key="ELISA_dilution_factor")
+        st.number_input("ELISA dilution factor", min_value=1.0, max_value=10.0, step=0.5, value=2.0, key="ELISA_dilution_factor")
     with col2:
         conditions_parts = st.multiselect("Select the columns to for a new condition", name_list)
     with col3:
