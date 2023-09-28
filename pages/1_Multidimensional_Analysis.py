@@ -421,7 +421,7 @@ if len(st.session_state.img_df) >0:
                 batch_IDs = np.array(use_df[batch_col])
                 batches = np.unique(batch_IDs)
                 cmap = sns.color_palette(palette='Accent', n_colors=len(batches))
-                y_data = feature_plot
+                y_data = feature_plot[0]
                 if b_normalize:
                     condition_IDs = np.array(use_df[genotype_col])
                     control_filter = condition_IDs == control_group
