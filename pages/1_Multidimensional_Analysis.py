@@ -309,88 +309,88 @@ if len(st.session_state.img_df) > 0:
             do_bootstrap = col3.checkbox("Bootstrap analysis")
             submitted = st.form_submit_button("Update")
             if submitted:
-                    if  len(conditions_order) == 3:
-                        cmap=['#252525', '#026842', '#5E9BD1']
+                if  len(conditions_order) == 3:
+                    cmap=['#252525', '#026842', '#5E9BD1']
+                else:
+                    cmap=['#252525', '#006d2c', '#08519c', '#a50f15', '#54278f',
+                            '#636363', '#31a354', '#3182bd', '#de2d26', '#756bb1',
+                            '#969696', '#74c476', '#6baed6', '#fb6a4a', '#9e9ac8',
+                            '#bdbdbd', '#a1d99b', '#9ecae1', '#fc9272', '#bcbddc']
+                    cmap = cmap[:len(conditions_order)]
+                # Perform an LDA
+                if len(unique_groups) > len(conditions_order):
+                    lda_df = use_df[use_df[genotype_col].isin(conditions_order)]
+                else:
+                    lda_df = use_df
+                lda_data, lda_labels = process_LDA_data(lda_df, varIdx, genotype_col)
+                # set lda model and fit to the data
+                linear_discriminant = LDA(solver="svd", store_covariance=True)
+                lda = linear_discriminant.fit_transform(lda_data, lda_labels)
+                if do_bootstrap:
+                    lda_confusion = np.zeros((len(conditions_order), len(conditions_order), 1000))
+                    for b in range(1000):
+                        data_train, data_test, label_train, label_test = train_test_split(lda_data, lda_labels, test_size=0.3)
+                        lda_predict = linear_discriminant.fit(data_train, label_train).predict(data_test)
+                        lda_confusion[:,:,b] = confusion_matrix(y_true=label_test, y_pred=lda_predict, labels=conditions_order)
+                    lda_confusion = np.mean(lda_confusion, axis=2)
+                else:
+                    lda_predict = linear_discriminant.fit(lda_data, lda_labels).predict(lda_data)
+                    lda_confusion = confusion_matrix(y_true=lda_labels, y_pred=lda_predict, labels=conditions_order)
+                tab1, tab2, tab3 = st.tabs(['Scatter', 'Confusion', 'Predict'])
+                with tab1:
+                    fig_lda = plt.figure()
+                    if st.session_state.biplot:
+                        # Get the coefficients (scaling factors)
+                        lda_coef = linear_discriminant.scalings_
+                        feat_names = lda_df.iloc[:,varIdx].columns.tolist()
+                        sum_components = np.sum(abs(lda_coef), axis=1)
+                        sort_index = np.argsort(sum_components)
+                        scalex = 1.0 / (lda[:, 0].max() - lda[:, 0].min())
+                        scaley = 1.0 / (lda[:, 1].max() - lda[:, 1].min())
+                        sns.scatterplot(x=lda[:, 0] * scalex, y=lda[:, 1] * scaley, hue=lda_labels, palette=cmap)
+                        for s in sort_index[0:5]:
+                            plt.arrow(0, 0, lda_coef[s, 0], lda_coef[s, 1], color='r')
+                            plt.text(lda_coef[s, 0], lda_coef[s, 1], feat_names[s], ha='center', va='center')
+                        plt.xlim([-1, 1])
+                        plt.ylim([-1, 1])
                     else:
-                        cmap=['#252525', '#006d2c', '#08519c', '#a50f15', '#54278f',
-                              '#636363', '#31a354', '#3182bd', '#de2d26', '#756bb1',
-                              '#969696', '#74c476', '#6baed6', '#fb6a4a', '#9e9ac8',
-                              '#bdbdbd', '#a1d99b', '#9ecae1', '#fc9272', '#bcbddc']
-                        cmap = cmap[:len(conditions_order)]
-                    # Perform an LDA
-                    if len(unique_groups) > len(conditions_order):
-                        lda_df = use_df[use_df[genotype_col].isin(conditions_order)]
-                    else:
-                        lda_df = use_df
-                    lda_data, lda_labels = process_LDA_data(lda_df, varIdx, genotype_col)
-                    # set lda model and fit to the data
-                    linear_discriminant = LDA(solver="svd", store_covariance=True)
-                    lda = linear_discriminant.fit_transform(lda_data, lda_labels)
-                    if do_bootstrap:
-                        lda_confusion = np.zeros((len(conditions_order), len(conditions_order), 1000))
-                        for b in range(1000):
-                            data_train, data_test, label_train, label_test = train_test_split(lda_data, lda_labels, test_size=0.3)
-                            lda_predict = linear_discriminant.fit(data_train, label_train).predict(data_test)
-                            lda_confusion[:,:,b] = confusion_matrix(y_true=label_test, y_pred=lda_predict, labels=conditions_order)
-                        lda_confusion = np.mean(lda_confusion, axis=2)
-                    else:
-                        lda_predict = linear_discriminant.fit(lda_data, lda_labels).predict(lda_data)
-                        lda_confusion = confusion_matrix(y_true=lda_labels, y_pred=lda_predict, labels=conditions_order)
-                    tab1, tab2, tab3 = st.tabs(['Scatter', 'Confusion', 'Predict'])
-                    with tab1:
-                        fig_lda = plt.figure()
-                        if st.session_state.biplot:
-                            # Get the coefficients (scaling factors)
-                            lda_coef = linear_discriminant.scalings_
-                            feat_names = lda_df.iloc[:,varIdx].columns.tolist()
-                            sum_components = np.sum(abs(lda_coef), axis=1)
-                            sort_index = np.argsort(sum_components)
-                            scalex = 1.0 / (lda[:, 0].max() - lda[:, 0].min())
-                            scaley = 1.0 / (lda[:, 1].max() - lda[:, 1].min())
-                            sns.scatterplot(x=lda[:, 0] * scalex, y=lda[:, 1] * scaley, hue=lda_labels, palette=cmap)
-                            for s in sort_index[0:5]:
-                                plt.arrow(0, 0, lda_coef[s, 0], lda_coef[s, 1], color='r')
-                                plt.text(lda_coef[s, 0], lda_coef[s, 1], feat_names[s], ha='center', va='center')
-                            plt.xlim([-1, 1])
-                            plt.ylim([-1, 1])
+                        if len(conditions_order) > 2:
+                            sns.scatterplot(x=lda[:, 0], y=lda[:, 1], hue=lda_labels, palette=cmap)
+                            plt.ylabel("LD2")
                         else:
-                            if len(conditions_order) > 2:
-                                sns.scatterplot(x=lda[:, 0], y=lda[:, 1], hue=lda_labels, palette=cmap)
-                                plt.ylabel("LD2")
-                            else:
-                                sns.histplot(x=lda[:, 0], stat='probability', binwidth=0.1, kde=True, hue=lda_labels, palette=cmap)
-                                plt.ylabel("Counts")
-                        plt.xlabel("LD1")
-                        st.pyplot(fig_lda, use_container_width=True)
-                    with tab2:
+                            sns.histplot(x=lda[:, 0], stat='probability', binwidth=0.1, kde=True, hue=lda_labels, palette=cmap)
+                            plt.ylabel("Counts")
+                    plt.xlabel("LD1")
+                    st.pyplot(fig_lda, use_container_width=True)
+                with tab2:
+                    fig_confusion = plt.figure()
+                    sns.heatmap(data = lda_confusion, cmap='mako', annot=True, xticklabels=conditions_order, yticklabels=conditions_order)
+                    plt.xlabel("Predicted")
+                    plt.ylabel("True")
+                    st.pyplot(fig_confusion)
+                with tab3:
+                    predict_order = st.multiselect("Select the variables to predict", unique_groups)
+                    if len(predict_order) >= 2:
+                        predict_df = use_df[use_df[genotype_col].isin(predict_order)]
+                        predict_data, predict_labels = process_LDA_data(predict_df, varIdx, genotype_col)
+                        predict_test = linear_discriminant.fit(lda_data, lda_labels).predict(predict_data)
+                        transform_test = linear_discriminant.fit(lda_data, lda_labels).transform(predict_data)
+                        predict_confusion = np.zeros((len(predict_order), len(conditions_order)))
+                        for p_i, predict in enumerate(predict_order):
+                            temp_fltr = predict_test[predict_labels==predict]
+                            for t_i, label in enumerate(conditions_order):
+                                predict_confusion[p_i,t_i] = np.sum(temp_fltr == label)
                         fig_confusion = plt.figure()
-                        sns.heatmap(data = lda_confusion, cmap='mako', annot=True, xticklabels=conditions_order, yticklabels=conditions_order)
+                        sns.heatmap(data = predict_confusion, cmap='mako', annot=True, xticklabels=conditions_order, yticklabels=predict_order)
                         plt.xlabel("Predicted")
                         plt.ylabel("True")
                         st.pyplot(fig_confusion)
-                    with tab3:
-                        predict_order = st.multiselect("Select the variables to predict", unique_groups)
-                        if len(predict_order) >= 2:
-                            predict_df = use_df[use_df[genotype_col].isin(predict_order)]
-                            predict_data, predict_labels = process_LDA_data(predict_df, varIdx, genotype_col)
-                            predict_test = linear_discriminant.fit(lda_data, lda_labels).predict(predict_data)
-                            transform_test = linear_discriminant.fit(lda_data, lda_labels).transform(predict_data)
-                            predict_confusion = np.zeros((len(predict_order), len(conditions_order)))
-                            for p_i, predict in enumerate(predict_order):
-                                temp_fltr = predict_test[predict_labels==predict]
-                                for t_i, label in enumerate(conditions_order):
-                                    predict_confusion[p_i,t_i] = np.sum(temp_fltr == label)
-                            fig_confusion = plt.figure()
-                            sns.heatmap(data = predict_confusion, cmap='mako', annot=True, xticklabels=conditions_order, yticklabels=predict_order)
-                            plt.xlabel("Predicted")
-                            plt.ylabel("True")
-                            st.pyplot(fig_confusion)
-                    if lda_feature_list:
-                        for s in sort_index:
-                            feat_names[s]
+                if lda_feature_list:
+                    for s in sort_index:
+                        feat_names[s]
 
-                    img_lda = io.BytesIO()
-                    plt.savefig(img_lda, format='pdf')
+                img_lda = io.BytesIO()
+                plt.savefig(img_lda, format='pdf')
 
         if 'img_lda' in locals():
             col1, col2 = st.columns(2)
@@ -416,36 +416,36 @@ if len(st.session_state.img_df) >0:
             b_normalize = col4.checkbox("Normalize")
             b_bar = col4.checkbox("Bar graph")
             do_plot = st.form_submit_button("Update plot")
-            if do_plot:
-                fig_plot, ax = plt.subplots(figsize=(15,10))
-                batch_IDs = np.array(use_df[batch_col])
-                batches = np.unique(batch_IDs)
-                cmap = sns.color_palette(palette='Accent', n_colors=len(batches))
-                y_data = feature_plot
-                if b_normalize:
-                    condition_IDs = np.array(use_df[genotype_col])
-                    control_filter = condition_IDs == control_group
-                    temp_values = np.array(use_df[feature_plot])
-                    for batch in batches:
-                        batch_filter = batch_IDs == batch
-                        control_value = temp_values[(batch_filter) & (control_filter)]
-                        control_value = np.mean(control_value)
-                        temp_values[batch_filter] = temp_values[batch_filter] / control_value
-                    use_df['NormalizeValues'] = temp_values
-                    y_data = 'NormalizeValues'
-                if b_bar:
-                    sns.barplot(data=use_df, x=genotype_col, y=y_data, order=conditions_order, edgecolor='k', facecolor=(.7, .7, .7), errcolor='k')
-                else:
-                    PROPS = {
-                            'boxprops':{'facecolor':(.7, .7, .7), 'edgecolor':'black'},
-                        }
-                    sns.boxplot(data=use_df, x=genotype_col, y=y_data, order=conditions_order, **PROPS)
-                sns.swarmplot(data=use_df, x=genotype_col, y=y_data, order=conditions_order, hue=batch_col, palette=cmap)
-                plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
-                st.pyplot(fig_plot)
-                img_plot = io.BytesIO()
-                plt.savefig(img_plot, format='pdf')
-        st.download_button(label="Download plot", data=img_plot, file_name="Simple_Plot.pdf", mime="application/pdf", key="Multidimension_save_figure2")
+#            if do_plot:
+#                fig_plot, ax = plt.subplots(figsize=(15,10))
+#                batch_IDs = np.array(use_df[batch_col])
+#                batches = np.unique(batch_IDs)
+#                cmap = sns.color_palette(palette='Accent', n_colors=len(batches))
+#                y_data = feature_plot
+#                if b_normalize:
+#                    condition_IDs = np.array(use_df[genotype_col])
+#                   control_filter = condition_IDs == control_group
+#                   temp_values = np.array(use_df[feature_plot])
+#                   for batch in batches:
+#                       batch_filter = batch_IDs == batch
+#                       control_value = temp_values[(batch_filter) & (control_filter)]
+#                       control_value = np.mean(control_value)
+#                       temp_values[batch_filter] = temp_values[batch_filter] / control_value
+#                  use_df['NormalizeValues'] = temp_values
+#                  y_data = 'NormalizeValues'
+#                if b_bar:
+#                    sns.barplot(data=use_df, x=genotype_col, y=y_data, order=conditions_order, edgecolor='k', facecolor=(.7, .7, .7), errcolor='k')
+#                else:
+#                    PROPS = {
+#                            'boxprops':{'facecolor':(.7, .7, .7), 'edgecolor':'black'},
+#                        }
+#                    sns.boxplot(data=use_df, x=genotype_col, y=y_data, order=conditions_order, **PROPS)
+#                sns.swarmplot(data=use_df, x=genotype_col, y=y_data, order=conditions_order, hue=batch_col, palette=cmap)
+#                plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+#                st.pyplot(fig_plot)
+#                img_plot = io.BytesIO()
+#                plt.savefig(img_plot, format='pdf')
+#        st.download_button(label="Download plot", data=img_plot, file_name="Simple_Plot.pdf", mime="application/pdf", key="Multidimension_save_figure2")
                 
 #if len(st.session_state.groupped_data) > 0:
 #    # Try to perform a UMAP analysis
