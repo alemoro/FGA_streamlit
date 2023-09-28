@@ -439,6 +439,9 @@ if len(st.session_state.img_df) >0:
                     PROPS = {
                             'boxprops':{'facecolor':(.7, .7, .7), 'edgecolor':'black'},
                         }
+                    genotype_col
+                    y_data
+                    conditions_order
                     sns.boxplot(data=use_df, x=genotype_col, y=y_data, order=conditions_order, **PROPS)
                 sns.swarmplot(data=use_df, x=genotype_col, y=y_data, order=conditions_order, hue=batch_col, palette=cmap)
                 plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
