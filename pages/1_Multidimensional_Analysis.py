@@ -362,12 +362,16 @@ if len(st.session_state.img_df) > 0:
                             plt.ylabel("Counts")
                     plt.xlabel("LD1")
                     st.pyplot(fig_lda, use_container_width=True)
+                    img_lda = io.BytesIO()
+                    plt.savefig(img_lda, format='pdf')
                 with tab2:
                     fig_confusion = plt.figure()
                     sns.heatmap(data = lda_confusion, cmap='mako', annot=True, xticklabels=conditions_order, yticklabels=conditions_order)
                     plt.xlabel("Predicted")
                     plt.ylabel("True")
                     st.pyplot(fig_confusion)
+                    img_confusion = io.BytesIO()
+                    plt.savefig(img_confusion, format='pdf')
                 with tab3:
                     predict_order = st.multiselect("Select the variables to predict", unique_groups)
                     if len(predict_order) >= 2:
@@ -385,18 +389,19 @@ if len(st.session_state.img_df) > 0:
                         plt.xlabel("Predicted")
                         plt.ylabel("True")
                         st.pyplot(fig_confusion)
+                        img_predict = io.BytesIO()
+                        plt.savefig(img_predict, format='pdf')
                 if lda_feature_list:
                     for s in sort_index:
                         feat_names[s]
 
-                img_lda = io.BytesIO()
-                plt.savefig(img_lda, format='pdf')
-
         if 'img_lda' in locals():
-            col1, col2 = st.columns(2)
+            col1, col2, col3, col4 = st.columns(4)
             col1.download_button(label="Download LDA plot", data=img_lda, file_name="LDA_Plot.pdf", mime="application/pdf")
+            col2.download_button(label="Download Confusion plot", data=img_confusion, file_name="Confusion_Plot.pdf", mime="application/pdf")
+            col3.download_button(label="Download Prediction plot", data=img_predict, file_name="Prediction_Plot.pdf", mime="application/pdf")
             download_df = convert_df(pd.DataFrame(lda))
-            col2.download_button(label="Download LDA", data=download_df, file_name="Networkanalysis_LDA.csv", mime="text/csv")
+            col4.download_button(label="Download LDA", data=download_df, file_name="Networkanalysis_LDA.csv", mime="text/csv")
 
 st.header('Simple plot', divider=True)
 with st.expander('Simple plot explanation'):
