@@ -445,7 +445,7 @@ if len(st.session_state.img_df) >0:
                 st.pyplot(fig_plot)
                 img_plot = io.BytesIO()
                 plt.savefig(img_plot, format='pdf')
-                st.download_button(label="Download plot", data=img_plot, file_name="Simple_Plot.pdf", mime="application/pdf", key="Multidimension_save_figure2")
+        st.download_button(label="Download plot", data=img_plot, file_name="Simple_Plot.pdf", mime="application/pdf", key="Multidimension_save_figure2")
                 
 #if len(st.session_state.groupped_data) > 0:
 #    # Try to perform a UMAP analysis
