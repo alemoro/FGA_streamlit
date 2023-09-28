@@ -409,43 +409,43 @@ if len(st.session_state.img_df) >0:
         with st.form("Plot Options"):
             unique_groups = use_df[genotype_col].unique()
             col1, col2, col3, col4 = st.columns(4)
-            feature_plot = col1.multiselect("Select feature", var_names, index=0, key="Multidimension_feature_plot", max_selections=1)
+            feature_plot = col1.multiselect("Select feature", var_names, max_selections=1, key="Multidimension_feature_plot")
             conditions_order = col2.multiselect("Select the plotting order", unique_groups, default=control_group)
             batch_col = col3.selectbox("Select the culutue batch ID", np.append(["##"], var_names), index=0, key="sel_batchID")
             col4.write("##")
             b_normalize = col4.checkbox("Normalize")
             b_bar = col4.checkbox("Bar graph")
-            plot_data = st.form_submit_button("Update plot")
-#            if do_plot:
-#                fig_plot, ax = plt.subplots(figsize=(15,10))
-#                batch_IDs = np.array(use_df[batch_col])
-#                batches = np.unique(batch_IDs)
-#                cmap = sns.color_palette(palette='Accent', n_colors=len(batches))
-#                y_data = feature_plot
-#                if b_normalize:
-#                    condition_IDs = np.array(use_df[genotype_col])
-#                   control_filter = condition_IDs == control_group
-#                   temp_values = np.array(use_df[feature_plot])
-#                   for batch in batches:
-#                       batch_filter = batch_IDs == batch
-#                       control_value = temp_values[(batch_filter) & (control_filter)]
-#                       control_value = np.mean(control_value)
-#                       temp_values[batch_filter] = temp_values[batch_filter] / control_value
-#                  use_df['NormalizeValues'] = temp_values
-#                  y_data = 'NormalizeValues'
-#                if b_bar:
-#                    sns.barplot(data=use_df, x=genotype_col, y=y_data, order=conditions_order, edgecolor='k', facecolor=(.7, .7, .7), errcolor='k')
-#                else:
-#                    PROPS = {
-#                            'boxprops':{'facecolor':(.7, .7, .7), 'edgecolor':'black'},
-#                        }
-#                    sns.boxplot(data=use_df, x=genotype_col, y=y_data, order=conditions_order, **PROPS)
-#                sns.swarmplot(data=use_df, x=genotype_col, y=y_data, order=conditions_order, hue=batch_col, palette=cmap)
-#                plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
-#                st.pyplot(fig_plot)
-#                img_plot = io.BytesIO()
-#                plt.savefig(img_plot, format='pdf')
-#        st.download_button(label="Download plot", data=img_plot, file_name="Simple_Plot.pdf", mime="application/pdf", key="Multidimension_save_figure2")
+            do_plot = st.form_submit_button("Update plot")
+            if do_plot:
+                fig_plot, ax = plt.subplots(figsize=(15,10))
+                batch_IDs = np.array(use_df[batch_col])
+                batches = np.unique(batch_IDs)
+                cmap = sns.color_palette(palette='Accent', n_colors=len(batches))
+                y_data = feature_plot
+                if b_normalize:
+                    condition_IDs = np.array(use_df[genotype_col])
+                    control_filter = condition_IDs == control_group
+                    temp_values = np.array(use_df[feature_plot])
+                    for batch in batches:
+                       batch_filter = batch_IDs == batch
+                       control_value = temp_values[(batch_filter) & (control_filter)]
+                       control_value = np.mean(control_value)
+                       temp_values[batch_filter] = temp_values[batch_filter] / control_value
+                    use_df['NormalizeValues'] = temp_values
+                    y_data = 'NormalizeValues'
+                if b_bar:
+                    sns.barplot(data=use_df, x=genotype_col, y=y_data, order=conditions_order, edgecolor='k', facecolor=(.7, .7, .7), errcolor='k')
+                else:
+                    PROPS = {
+                            'boxprops':{'facecolor':(.7, .7, .7), 'edgecolor':'black'},
+                        }
+                    sns.boxplot(data=use_df, x=genotype_col, y=y_data, order=conditions_order, **PROPS)
+                sns.swarmplot(data=use_df, x=genotype_col, y=y_data, order=conditions_order, hue=batch_col, palette=cmap)
+                plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+                st.pyplot(fig_plot)
+                img_plot = io.BytesIO()
+                plt.savefig(img_plot, format='pdf')
+        st.download_button(label="Download plot", data=img_plot, file_name="Simple_Plot.pdf", mime="application/pdf", key="Multidimension_save_figure2")
                 
 #if len(st.session_state.groupped_data) > 0:
 #    # Try to perform a UMAP analysis
