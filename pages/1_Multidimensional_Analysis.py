@@ -398,8 +398,10 @@ if len(st.session_state.img_df) > 0:
         if 'img_lda' in locals():
             col1, col2, col3, col4 = st.columns(4)
             col1.download_button(label="Download LDA plot", data=img_lda, file_name="LDA_Plot.pdf", mime="application/pdf")
-            col2.download_button(label="Download Confusion plot", data=img_confusion, file_name="Confusion_Plot.pdf", mime="application/pdf")
-            col3.download_button(label="Download Prediction plot", data=img_predict, file_name="Prediction_Plot.pdf", mime="application/pdf")
+            if 'img_confusion' in locals():
+                col2.download_button(label="Download Confusion plot", data=img_confusion, file_name="Confusion_Plot.pdf", mime="application/pdf")
+            if 'img_predict' in locals():
+                col3.download_button(label="Download Prediction plot", data=img_predict, file_name="Prediction_Plot.pdf", mime="application/pdf")
             download_df = convert_df(pd.DataFrame(lda))
             col4.download_button(label="Download LDA", data=download_df, file_name="Networkanalysis_LDA.csv", mime="text/csv")
 
