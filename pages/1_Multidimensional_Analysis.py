@@ -407,6 +407,7 @@ with st.expander('Simple plot explanation'):
 if len(st.session_state.img_df) >0:
     if st.toggle('Plot data', key='Multidimensional_Plot_Toggle'):
         with st.form("Plot Options"):
+            do_plot = st.form_submit_button("Update plot")
             unique_groups = use_df[genotype_col].unique()
             col1, col2, col3, col4 = st.columns([2,2,1,1])
             with col1:
@@ -419,7 +420,6 @@ if len(st.session_state.img_df) >0:
                 st.write("##")
                 b_normalize = st.checkbox("Normalize")
                 b_bar = st.checkbox("Bar graph")
-            do_plot = st.form_submit_button("Plot")
             if do_plot:
                 fig_plot, ax = plt.subplots(figsize=(15,10))
                 batch_IDs = np.array(use_df[batch_col])
