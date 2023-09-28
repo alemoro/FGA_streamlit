@@ -358,7 +358,7 @@ if len(st.session_state.img_df) > 0:
                                 sns.scatterplot(x=lda[:, 0], y=lda[:, 1], hue=lda_labels, palette=cmap)
                                 plt.ylabel("LD2")
                             else:
-                                sns.histplot(x=lda[:, 0], hue=lda_labels, palette=cmap)
+                                sns.histplot(x=lda[:, 0], stat='probability', binwidth=0.1, kde=True, hue=lda_labels, palette=cmap)
                                 plt.ylabel("Counts")
                         plt.xlabel("LD1")
                         st.pyplot(fig_lda, use_container_width=True)
@@ -370,7 +370,7 @@ if len(st.session_state.img_df) > 0:
                         st.pyplot(fig_confusion)
                     with tab3:
                         predict_order = st.multiselect("Select the variables to predict", unique_groups)
-                        if len(predict_order) > 2:
+                        if len(predict_order) >= 2:
                             predict_df = use_df[use_df[genotype_col].isin(predict_order)]
                             predict_data, predict_labels = process_LDA_data(predict_df, varIdx, genotype_col)
                             predict_test = linear_discriminant.fit(lda_data, lda_labels).predict(predict_data)
@@ -397,8 +397,60 @@ if len(st.session_state.img_df) > 0:
             col1.download_button(label="Download LDA plot", data=img_lda, file_name="LDA_Plot.pdf", mime="application/pdf")
             download_df = convert_df(pd.DataFrame(lda))
             col2.download_button(label="Download LDA", data=download_df, file_name="Networkanalysis_LDA.csv", mime="text/csv")
-                    
 
+st.header('Simple plot', divider=True)
+with st.expander('Simple plot explanation'):
+    st.markdown("""
+                Here you can select one or more features, and the groups that you would like to plot as a boxplot or a bargraph.  
+                The plots will follow the order of conditions based on the order that you select. All the boxes, or bars, will be gray, because the colors will be used to plot the individual data points according to their culture batch.
+                """)                
+if len(st.session_state.img_df) >0:
+    if st.toggle('Plot data', key='Multidimensional_Plot_Toggle'):
+        with st.form("Plot Options"):
+            unique_groups = use_df[genotype_col].unique()
+            col1, col2, col3, col4 = st.columns([2,2,1,1])
+            with col1:
+                feature_plot = st.multiselect("Select feature", var_names, index=0, key="Multidimension_feature_plot", max_selections=1)
+            with col2:
+                conditions_order = st.multiselect("Select the plotting order", unique_groups, default=control_group)
+            with col3:
+                batch_col = st.selectbox("Select the culutue batch ID", np.append(["##"], var_names), index=0, key="sel_batchID")
+            with col4:
+                st.write("##")
+                b_normalize = st.checkbox("Normalize")
+                b_bar = st.checkbox("Bar graph")
+            submitted = st.form_submit_button("Update")
+            if submitted:
+                fig_plot, ax = plt.subplots(figsize=(15,10))
+                batch_IDs = np.array(use_df[batch_col])
+                batches = np.unique(batch_IDs)
+                cmap = sns.color_palette(palette='Accent', n_colors=len(batches))
+                y_data = feature_plot
+                if b_normalize:
+                    condition_IDs = np.array(use_df[genotype_col])
+                    control_filter = condition_IDs == control_group
+                    temp_values = np.array(use_df[feature_plot])
+                    for batch in batches:
+                        batch_filter = batch_IDs == batch
+                        control_value = temp_values[(batch_filter) & (control_filter)]
+                        control_value = np.mean(control_value)
+                        temp_values[batch_filter] = temp_values[batch_filter] / control_value
+                    use_df['NormalizeValues'] = temp_values
+                    y_data = 'NormalizeValues'
+                if b_bar:
+                    sns.barplot(data=use_df, x=genotype_col, y=y_data, order=conditions_order, edgecolor='k', facecolor=(.7, .7, .7), errcolor='k')
+                else:
+                    PROPS = {
+                            'boxprops':{'facecolor':(.7, .7, .7), 'edgecolor':'black'},
+                        }
+                    sns.boxplot(data=use_df, x=genotype_col, y=y_data, order=conditions_order, **PROPS)
+                sns.swarmplot(data=use_df, x=genotype_col, y=y_data, order=conditions_order, hue=batch_col, palette=cmap)
+                plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+                st.pyplot(fig_plot)
+                img_plot = io.BytesIO()
+                plt.savefig(img_plot, format='pdf')
+                st.download_button(label="Download plot", data=img_plot, file_name="Simple_Plot.pdf", mime="application/pdf", key="Multidimension_save_figure2")
+                
 #if len(st.session_state.groupped_data) > 0:
 #    # Try to perform a UMAP analysis
 #    reducer = umap.UMAP(n_neighbors=50, min_dist=1)
