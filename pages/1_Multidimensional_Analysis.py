@@ -336,17 +336,17 @@ if len(st.session_state.img_df) > 0:
                     else:
                         lda_predict = linear_discriminant.fit(lda_data, lda_labels).predict(lda_data)
                         lda_confusion = confusion_matrix(y_true=lda_labels, y_pred=lda_predict, labels=conditions_order)
-                    # Get the coefficients (scaling factors)
-                    lda_coef = linear_discriminant.scalings_
-                    feat_names = lda_df.iloc[:,varIdx].columns.tolist()
-                    sum_components = np.sum(abs(lda_coef), axis=1)
-                    sort_index = np.argsort(sum_components)
-                    scalex = 1.0 / (lda[:, 0].max() - lda[:, 0].min())
-                    scaley = 1.0 / (lda[:, 1].max() - lda[:, 1].min())
                     tab1, tab2, tab3 = st.tabs(['Scatter', 'Confusion', 'Predict'])
                     with tab1:
                         fig_lda = plt.figure()
                         if st.session_state.biplot:
+                            # Get the coefficients (scaling factors)
+                            lda_coef = linear_discriminant.scalings_
+                            feat_names = lda_df.iloc[:,varIdx].columns.tolist()
+                            sum_components = np.sum(abs(lda_coef), axis=1)
+                            sort_index = np.argsort(sum_components)
+                            scalex = 1.0 / (lda[:, 0].max() - lda[:, 0].min())
+                            scaley = 1.0 / (lda[:, 1].max() - lda[:, 1].min())
                             sns.scatterplot(x=lda[:, 0] * scalex, y=lda[:, 1] * scaley, hue=lda_labels, palette=cmap)
                             for s in sort_index[0:5]:
                                 plt.arrow(0, 0, lda_coef[s, 0], lda_coef[s, 1], color='r')
