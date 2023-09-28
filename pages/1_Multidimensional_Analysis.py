@@ -288,12 +288,15 @@ with st.expander("LDA explanation"):
              Here, the LDA is calculatelated using the *sklearn* library:
              - First the data is normalized so that each measurement is represented by a distribution of mean 0 and standard deviation 1.
              - Then all NaN and 0 values are removed from the dataset
-             - The model is then calculated with a subset of the data (training dataset, 80% of the data)  
+             - You then need to select the condition that you would like to plot. Note that the LDA will be calculate on those conditions only
+             - Depending if the *bootstrap analysis* is selected the model will be calculated over the entire dataset (no bootstrap) or on 70% of the dataset repeated 1000 times (more accurate, but more computational intensive)
                
             To calculate which features are more important in the model:
              - The scaling factors are retrieved from the model
              - The factors are scaled and sorted on the data  
              The factor can then be plotted on top of the scatter plot of the LDA (default) as a **biplot**, or listed underneath the plot.
+             In addition to the scatter plot there is also the option to plot the confusion matrix for the LDA itself, and for the prediction of new conditions on top of the conditions used to calculate the LDA.
+             If you opted to perform a bootstrap analysis the number that you see on the confution matrix is the average number of observations in the 1000 repetitions.
              """)
 if len(st.session_state.img_df) > 0:    
     if st.toggle("Calculate LDA", key="Multidimension_LDA_Toggle"):
@@ -351,9 +354,13 @@ if len(st.session_state.img_df) > 0:
                             plt.xlim([-1, 1])
                             plt.ylim([-1, 1])
                         else:
-                            sns.scatterplot(x=lda[:, 0], y=lda[:, 1], hue=lda_labels, palette=cmap)
+                            if len(conditions_order) > 2:
+                                sns.scatterplot(x=lda[:, 0], y=lda[:, 1], hue=lda_labels, palette=cmap)
+                                plt.ylabel("LD2")
+                            else:
+                                sns.histplot(x=lda[:, 0], hue=lda_labels, palette=cmap)
+                                plt.ylabel("Counts")
                         plt.xlabel("LD1")
-                        plt.ylabel("LD2")
                         st.pyplot(fig_lda, use_container_width=True)
                     with tab2:
                         fig_confusion = plt.figure()
