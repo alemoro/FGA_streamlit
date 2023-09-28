@@ -419,8 +419,8 @@ if len(st.session_state.img_df) >0:
                 st.write("##")
                 b_normalize = st.checkbox("Normalize")
                 b_bar = st.checkbox("Bar graph")
-            submitted = st.form_submit_button("Plot")
-            if submitted:
+            do_plot = st.form_submit_button("Plot")
+            if do_plot:
                 fig_plot, ax = plt.subplots(figsize=(15,10))
                 batch_IDs = np.array(use_df[batch_col])
                 batches = np.unique(batch_IDs)
