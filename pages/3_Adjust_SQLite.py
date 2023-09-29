@@ -128,3 +128,34 @@ st.code('''
         db_type         = sqlite
         db_sqlite_file  = \\scistor.vu.nl\shares\BETA-NeuroSciences-FGA-Screen\External\YourFolder\Your_CellProfiler_Analysis_Database.bd
         ''')
+st.markdown("""
+            To access you data from the SQL database (in Python or in MATLAB) you first need to open the database file in Python/MATLAB and then 'fetch' the data from the table that you would like to analyze furter.
+            """)
+st.code('''
+        # Python example
+        import sqlite3
+        import pandas as pd
+        import seaborn as sns
+        query = ("SELECT ImageNumber, Image_Metadata_BatchID, Image_Metadata_WellID, Treatment,"
+        " Image_Count_NeuronNuclei, Image_Count_Nuclei,"
+        " Mean_NeuronNuclei_Intensity_MeanIntensity_DAPI, Mean_NeuronNuclei_Intensity_MeanIntensity_TDP43,"
+        " Mean_Somas_Intensity_MeanIntensity_MAP2, Mean_Somas_Intensity_MeanIntensity_STMN2,"
+        " Mean_Somas_ObjectSkeleton_TotalObjectSkeletonLength_Neurites_img, Mean_Somas_ObjectSkeleton_NumberTrunks_Neurites_image"
+        " FROM TDP43_Per_Image")
+        tdp_df = pd.read_sql_query(query, conn)
+        # Change the names to be a bit more readable
+        tdp_df = tdp_df.set_axis(['ImageNumber', 'BatchID', 'WellID', 'Treatment', 'NeuronNuclei', 'TotalNuclei', 'Nuclear_DAPI', 'Nuclear_TDP43', 'Somas_MAP2', 'Somas_STMN2', 'NeuriteLength', 'NumberTrunks'], axis='columns')
+        sns.boxplot(data=tdp_df, x='Treatment', y='NeuronNuclei')
+
+        #########################################################
+
+        # MATLAB example
+        [dataFile, dataDir] = uigetfile('*.db');
+        conn = sqlite(fullfile(dataDir, dataFile));
+        queryT = "SELECT ImageNumber, Image_Metadata_BatchID, Image_Metadata_WellID, Treatment, Image_Count_NeuronNuclei, Image_Count_Nuclei, Mean_NeuronNuclei_Intensity_MeanIntensity_DAPI, Mean_NeuronNuclei_Intensity_MeanIntensity_TDP43, Mean_Somas_Intensity_MeanIntensity_MAP2, Mean_Somas_Intensity_MeanIntensity_STMN2, Mean_Somas_ObjectSkeleton_TotalObjectSkeletonLength_Neurites_img, Mean_Somas_ObjectSkeleton_NumberTrunks_Neurites_image FROM TDP43_Per_Image";
+        tdpT = fetch(conn, queryT);
+        tdpT = cell2table(tdpT, 'VariableNames', {'ImageNumber', 'BatchID', 'WellID', 'Treatment', 'NeuronNuclei', 'TotalNuclei', 'Nuclear_DAPI', 'Nuclear_TDP43', 'Somas_MAP2', 'Somas_STMN2', 'NeuriteLength', 'NumberTrunks'});
+        cmap = {'#252525', '#585858', '#ed1c24', '#006d2c', '#08519c', '#08519c', '#08519c', '#54278f', '#54278f', '#54278f'};
+        cmap = CreateColormap('other', cmap);
+        violinPlot(fltrT.Nuclear_DAPI, fltrT.Treatment, fltrT.BatchID, 'dots', 'label', 'Nuclear DAPI (normalized)', 'Normalize', {'Control'}, 'color', cmap)
+        ''')
