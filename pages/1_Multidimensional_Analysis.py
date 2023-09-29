@@ -102,7 +102,7 @@ def convert_df(temp_df):
 icon = Image.open("./img/Neurospector.png")
 
 st.set_page_config(
-    page_title="FGA ELISA analysis",
+    page_title="FGA multidimensional analysis",
     page_icon=icon,
     layout='wide',
 )
@@ -332,7 +332,9 @@ if len(st.session_state.img_df) > 0:
                         data_train, data_test, label_train, label_test = train_test_split(lda_data, lda_labels, test_size=0.3)
                         lda_predict = linear_discriminant.fit(data_train, label_train).predict(data_test)
                         lda_confusion[:,:,b] = confusion_matrix(y_true=label_test, y_pred=lda_predict, labels=conditions_order)
-                    lda_confusion = np.mean(lda_confusion, axis=2)
+                    lda_confusion_total = np.sum(lda_confusion, axis=2)
+                    lda_confusion_number = np.sum(lda_confusion_total, axis=1)
+                    lda_confusion = lda_confusion_total / lda_confusion_number[:, np.newaxis] * 100
                 else:
                     lda_predict = linear_discriminant.fit(lda_data, lda_labels).predict(lda_data)
                     lda_confusion = confusion_matrix(y_true=lda_labels, y_pred=lda_predict, labels=conditions_order)
